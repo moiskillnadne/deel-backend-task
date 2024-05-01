@@ -50,24 +50,6 @@ Contract.init(
   }
 );
 
-Contract.getById = async (id,profileId) => {
-
-  if(!id || !profileId) {
-    return null
-  }
-
-  const contract = await Contract.findOne({ 
-    where: { 
-        id, 
-        [Sequelize.Op.or]: [ 
-            { clientId: profileId },
-            { contractorId: profileId } 
-        ] 
-    } 
-  })
-  return contract
-}
-
 class Job extends Sequelize.Model {}
 Job.init(
   {
