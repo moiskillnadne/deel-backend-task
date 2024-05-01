@@ -1,9 +1,9 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const { Op, Sequelize, where, or } = require('sequelize')
+import express from 'express';
+import bodyParser from 'body-parser';
+import { Op, Sequelize } from 'sequelize'
 
-const { sequelize } = require('./model')
-const { getProfile } = require('./middleware/getProfile')
+import { sequelize } from './model.js'
+import { getProfile } from './middleware/getProfile.js'
 
 const app = express();
 
@@ -284,4 +284,4 @@ app.get('/admin/best-clients', async (req, res) => {
     res.json(clientsRate)
 })
 
-module.exports = app;
+export default app;
