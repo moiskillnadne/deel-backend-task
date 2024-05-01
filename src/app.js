@@ -1,5 +1,6 @@
 import express from "express"
 import bodyParser from "body-parser"
+import cors from 'cors'
 
 import { sequelize } from "./model.js"
 import { getProfile } from "./middleware/getProfile.js"
@@ -10,6 +11,9 @@ import { ProfileService } from "./services/profile.service.js"
 
 const app = express()
 
+app.use(cors({
+  origin: 'http://localhost:5173' 
+}))
 app.use(bodyParser.json())
 app.set("sequelize", sequelize)
 app.set("models", sequelize.models)
@@ -127,6 +131,29 @@ app.get("/admin/best-clients", async (req, res) => {
   const clientsRate = await ProfileService.getBestClients(start, end, limit)
 
   res.json(clientsRate)
+})
+
+/**
+ * @access GET /profile/login
+ * @body { profileId: string }
+ * @description Returns the profile by id
+ * @returns Profile
+ */
+app.post("/profile/login", async (req, res) => {
+
+  console.log(req.body)
+  const { profileId } = req.body
+
+  const profile = await ProfileService.login(profileId)
+
+  console.log(profileId)
+  console.log(profile)
+
+  if(!profile) {
+    return res.status(404).json({ isSuccess: false, message: `Profile with id = ${profileId} not found` })
+  }
+
+  return res.json({ isSuccess: true, profile })
 })
 
 export default app

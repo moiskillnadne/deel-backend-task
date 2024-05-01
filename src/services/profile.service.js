@@ -163,4 +163,15 @@ export class ProfileService {
       limit,
     })
   }
+
+  /**
+   * @param {string} profileId - The profile id
+   * @description The method find profile by id
+   * @returns {Promise<Profile | null>}
+   */
+  static login(profileId) {
+    if(!profileId) return null 
+
+    return Profile.findByPk(profileId)
+  }
 }
