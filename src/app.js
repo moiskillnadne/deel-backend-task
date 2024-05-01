@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { Op, Sequelize } = require('sequelize')
+const { Op, Sequelize, where, or } = require('sequelize')
 
 const { sequelize } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
@@ -206,6 +206,46 @@ app.post('/balances/deposit/:userId', async (req, res) => {
         await transaction.rollback();
         res.status(404).json({ message: 'Transaction failed' });
     }
+})
+
+/**
+ * @description Returns the profession that earned the most money (sum of jobs paid) for any contactor that worked in the query time range.
+ */
+app.get('/admin/best-profession', async (req, res) => {
+    const { Profile, Job, Contract } = req.app.get('models')
+    const { start, end } = req.query
+
+    const professionsRate = await Profile.findAll({
+        attributes: [
+            'id',
+            'profession',
+            [Sequelize.fn('SUM', Sequelize.col('Contractor.Jobs.price')), 'totalAmount']
+        ],
+        include: [{
+            model: Contract,
+            as: 'Contractor',
+            attributes: [],
+            where: {
+                status: 'in_progress'
+            },
+            include: [{ 
+                model: Job,
+                attributes: [],
+                where: {
+                    paid: true,
+                    paymentDate: {
+                        [Op.between]: [start, end]
+                    }
+                },
+             }]
+        }],
+        group: ['profession'],
+        order: [[Sequelize.literal('totalAmount'), 'DESC']],
+    })
+
+    const theBestProfession = professionsRate[0]
+
+    res.json(theBestProfession)
 })
 
 module.exports = app;
