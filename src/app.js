@@ -215,12 +215,13 @@ app.get('/admin/best-profession', async (req, res) => {
     const { Profile, Job, Contract } = req.app.get('models')
     const { start, end } = req.query
 
-    const professionsRate = await Profile.findAll({
+    const theBestProfession = await Profile.findOne({
         attributes: [
             'id',
             'profession',
             [Sequelize.fn('SUM', Sequelize.col('Contractor.Jobs.price')), 'totalAmount']
         ],
+        subQuery: false,
         include: [{
             model: Contract,
             as: 'Contractor',
@@ -243,9 +244,44 @@ app.get('/admin/best-profession', async (req, res) => {
         order: [[Sequelize.literal('totalAmount'), 'DESC']],
     })
 
-    const theBestProfession = professionsRate[0]
-
     res.json(theBestProfession)
+})
+
+app.get('/admin/best-clients', async (req, res) => {
+    const { Profile, Job, Contract } = req.app.get('models')
+    const { start, end, limit = 2 } = req.query
+
+    const clientsRate = await Profile.findAll({
+        attributes: [
+            'id',
+            [Sequelize.fn('concat', Sequelize.col('profile.firstName'), ' ', Sequelize.col('profile.lastName')), 'fullName'],
+            [Sequelize.fn('SUM', Sequelize.col('Client.Jobs.price')), 'paid']
+        ],
+        subQuery: false,
+        include: [{
+            model: Contract,
+            as: 'Client',
+            attributes: [],
+            where: {
+                status: 'in_progress'
+            },
+            include: [{ 
+                model: Job,
+                attributes: [],
+                where: {
+                    paid: true,
+                    paymentDate: {
+                        [Op.between]: [start, end]
+                    }
+                },
+             }]
+        }],
+        order: [[Sequelize.literal('paid'), 'DESC']],
+        group: ['profile.id'],
+        limit
+    })
+
+    res.json(clientsRate)
 })
 
 module.exports = app;
