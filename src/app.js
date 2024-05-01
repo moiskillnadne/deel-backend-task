@@ -53,4 +53,29 @@ app.get('/contracts', getProfile, async (req, res) => {
     res.json(contracts)
 })
 
+/**
+ * @returns Get all unpaid jobs for a user (**_either_** a client or contractor), for **_active contracts only_**.
+ */
+app.get('/jobs/unpaid', getProfile, async (req, res) => {
+    const { Contract, Job } = req.app.get('models')
+    const { id: profileId } = req.profile
+
+    const job = await Job.findAll({ 
+        where: { 
+            paid: null,
+        },
+        include: [{ 
+            model: Contract,
+            attributes: [],
+            where: { 
+                status: 'in_progress', 
+                [Op.or]: [ { clientId: profileId }, { contractorId: profileId } ] 
+            } 
+        }]
+    })
+
+
+    res.json(job)
+})
+
 module.exports = app;
