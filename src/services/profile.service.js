@@ -1,20 +1,18 @@
-import { Sequelize, Op } from 'sequelize'
-import { Job, Contract, Profile, sequelize } from '../model.js'
-
+import { Sequelize, Op } from "sequelize"
+import { Job, Contract, Profile, sequelize } from "../model.js"
 
 export class ProfileService {
-
   /**
    * @param {string} profileId
    * @param {number} amount
    * @description The method deposits money into the balance of a client, a client can't deposit more than 25% his total of jobs to pay. (at the deposit moment)
    * @returns {Promise<{ isSuccess: boolean; message: string }>}
-  */
+   */
   static async deposit(profileId, amount) {
-    if(!profileId || !amount) {
+    if (!profileId || !amount) {
       return {
         isSuccess: false,
-        message: 'Invalid profile id or amount'
+        message: "Invalid profile id or amount",
       }
     }
 
@@ -23,39 +21,41 @@ export class ProfileService {
     })
 
     try {
-      const profile = await Profile.findOne({
-          where: { id: profileId, type: 'client' },
-          attributes: [
-              'id',
-              'balance',
-              [(Sequelize.fn('SUM', Sequelize.col('Client.Jobs.price'))), 'totalAmountDue']
-          ],
-          include: [{ 
-              model: Contract, 
-              as: 'Client',
-              where: { status: 'in_progress' },
+      const profile = await Profile.findOne(
+        {
+          where: { id: profileId, type: "client" },
+          attributes: ["id", "balance", [Sequelize.fn("SUM", Sequelize.col("Client.Jobs.price")), "totalAmountDue"]],
+          include: [
+            {
+              model: Contract,
+              as: "Client",
+              where: { status: "in_progress" },
               attributes: [],
-              include: [{ 
-                  model: Job, 
+              include: [
+                {
+                  model: Job,
                   where: { paid: null },
-                  attributes: []
-              }]
-          }]
-      }, { transaction });
+                  attributes: [],
+                },
+              ],
+            },
+          ],
+        },
+        { transaction },
+      )
 
       if (!profile) {
-          throw new Error('Client profile by id not found')
+        throw new Error("Client profile by id not found")
       }
-
 
       const quarterAmountDue = profile.dataValues.totalAmountDue / 4
 
       if (quarterAmountDue === 0) {
-          throw new Error('No amount due')
+        throw new Error("No amount due")
       }
 
       if (amount > quarterAmountDue) {
-          throw new Error('Amount exceeds the 25% of the amount due')
+        throw new Error("Amount exceeds the 25% of the amount due")
       }
 
       profile.balance += amount
@@ -63,17 +63,17 @@ export class ProfileService {
       await profile.save({ transaction })
 
       transaction.commit()
-      return { 
+      return {
         isSuccess: true,
-        message: 'Deposit processed successfully' 
-      };
-    } catch(error) {
-      await transaction.rollback();
-      console.error(error);
+        message: "Deposit processed successfully",
+      }
+    } catch (error) {
+      await transaction.rollback()
+      console.error(error)
       return {
         isSuccess: false,
-        message: 'Transaction failed'
-      };
+        message: "Transaction failed",
+      }
     }
   }
 
@@ -82,79 +82,85 @@ export class ProfileService {
    * @param {string} endDate - Date string
    * @description The method returns the profession that earned the most money (sum of jobs paid) for any contactor that worked in the query time range.
    * @returns {Promise<{ id: string; profession: string; totalAmount: number } | null>}
-  */
+   */
   static async getBestProfession(startDate, endDate) {
-    if(!startDate || !endDate) return null
+    if (!startDate || !endDate) return null
 
     return Profile.findOne({
-      attributes: [
-          'id',
-          'profession',
-          [Sequelize.fn('SUM', Sequelize.col('Contractor.Jobs.price')), 'totalAmount']
-      ],
+      attributes: ["id", "profession", [Sequelize.fn("SUM", Sequelize.col("Contractor.Jobs.price")), "totalAmount"]],
       subQuery: false,
-      include: [{
+      include: [
+        {
           model: Contract,
-          as: 'Contractor',
+          as: "Contractor",
           attributes: [],
           where: {
-              status: 'in_progress'
+            status: "in_progress",
           },
-          include: [{ 
+          include: [
+            {
               model: Job,
               attributes: [],
               where: {
-                  paid: true,
-                  paymentDate: {
-                      [Op.between]: [startDate, endDate]
-                  }
+                paid: true,
+                paymentDate: {
+                  [Op.between]: [startDate, endDate],
+                },
               },
-           }]
-      }],
-      group: ['profession'],
-      order: [[Sequelize.literal('totalAmount'), 'DESC']],
+            },
+          ],
+        },
+      ],
+      group: ["profession"],
+      order: [[Sequelize.literal("totalAmount"), "DESC"]],
     })
   }
 
-    /**
+  /**
    * @param {string} startDate - Date string
    * @param {string} endDate - Date string
    * @param {number} limit - Number of clients to return
    * @description The method returns the best clients in the query time range.
    * @returns {Promise<Array<{ id: string; fullName: string; paid: number }>>}
-  */
+   */
   static async getBestClients(startDate, endDate, limit = 2) {
-    if(!startDate || !endDate) return []
+    if (!startDate || !endDate) return []
 
     return Profile.findAll({
       attributes: [
-          'id',
-          [Sequelize.fn('concat', Sequelize.col('profile.firstName'), ' ', Sequelize.col('profile.lastName')), 'fullName'],
-          [Sequelize.fn('SUM', Sequelize.col('Client.Jobs.price')), 'paid']
+        "id",
+        [
+          Sequelize.fn("concat", Sequelize.col("profile.firstName"), " ", Sequelize.col("profile.lastName")),
+          "fullName",
+        ],
+        [Sequelize.fn("SUM", Sequelize.col("Client.Jobs.price")), "paid"],
       ],
       subQuery: false,
-      include: [{
+      include: [
+        {
           model: Contract,
-          as: 'Client',
+          as: "Client",
           attributes: [],
           where: {
-              status: 'in_progress'
+            status: "in_progress",
           },
-          include: [{ 
+          include: [
+            {
               model: Job,
               attributes: [],
               where: {
-                  paid: true,
-                  paymentDate: {
-                      [Op.between]: [startDate, endDate]
-                  }
+                paid: true,
+                paymentDate: {
+                  [Op.between]: [startDate, endDate],
+                },
               },
-           }]
-      }],
-      order: [[Sequelize.literal('paid'), 'DESC']],
-      group: ['profile.id'],
-      limit
-  })
+            },
+          ],
+        },
+      ],
+      order: [[Sequelize.literal("paid"), "DESC"]],
+      group: ["profile.id"],
+      limit,
+    })
   }
-
 }
