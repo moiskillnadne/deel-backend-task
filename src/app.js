@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { Op, Transaction } = require('sequelize')
+const { Op, Sequelize } = require('sequelize')
 
 const { sequelize } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
@@ -78,6 +78,9 @@ app.get('/jobs/unpaid', getProfile, async (req, res) => {
     res.json(job)
 })
 
+/**
+ * @description Pay for a job, a client can only pay if his balance >= the amount to pay. The amount should be moved from the client's balance to the contractor balance.
+ */
 app.post('/jobs/:jobId/pay', getProfile, async (req, res) => {
     const { Job, Contract, Profile } = req.app.get('models')
     const { id: profileId } = req.profile
@@ -140,6 +143,69 @@ app.post('/jobs/:jobId/pay', getProfile, async (req, res) => {
         await transaction.rollback();
         res.status(404).json({ message: 'Transaction failed' });
       }
+})
+
+
+/**
+ * @description Deposits money into the balance of a client, a client can't deposit more than 25% his total of jobs to pay. (at the deposit moment)
+ */
+app.post('/balances/deposit/:userId', async (req, res) => {
+    const { Profile, Contract, Job } = req.app.get('models')
+    const { userId } = req.params
+    const { amount } = req.body
+
+
+    const transaction = await sequelize.transaction({
+        // isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE -- Not supported by sqlite
+    })
+
+    try {
+        const profile = await Profile.findOne({
+            where: { id: userId, type: 'client' },
+            attributes: [
+                'id',
+                'balance',
+                [(Sequelize.fn('SUM', Sequelize.col('Client.Jobs.price'))), 'totalAmountDue']
+            ],
+            include: [{ 
+                model: Contract, 
+                as: 'Client',
+                where: { status: 'in_progress' },
+                attributes: [],
+                include: [{ 
+                    model: Job, 
+                    where: { paid: null },
+                    attributes: []
+                }]
+            }]
+        }, { transaction });
+
+        if (!profile) {
+            throw new Error('Client profile by id not found')
+        }
+
+
+        const quarterAmountDue = profile.dataValues.totalAmountDue / 4
+
+        if (quarterAmountDue === 0) {
+            throw new Error('No amount due')
+        }
+
+        if (amount > quarterAmountDue) {
+            throw new Error('Amount exceeds the 25% of the amount due')
+        }
+
+        profile.balance += amount
+
+        await profile.save({ transaction })
+
+        transaction.commit()
+        res.json({ message: 'Deposit processed successfully' });
+    } catch(error) {
+        console.error(error);
+        await transaction.rollback();
+        res.status(404).json({ message: 'Transaction failed' });
+    }
 })
 
 module.exports = app;
