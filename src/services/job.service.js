@@ -40,7 +40,7 @@ export class JobService {
     }
 
     const transaction = await sequelize.transaction({
-      // isolationLevel: Transaction.ISOLATION_LEVELS.SERIALIZABLE -- Not supported by sqlite
+      // isolationLevel: Transaction.ISOLATION_LEVELS.REPEATABLE_READ -- Not supported by sqlite
     })
 
     try {

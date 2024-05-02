@@ -4,6 +4,16 @@
 
 This backend exercise involves building a Node.js/Express.js app that will serve a REST API. We imagine you should spend around 3 hours at implement this feature.
 
+
+## Dev Notes
+
+The following things was considered:
+
+• Use of transactions
+• Concurrency
+• Code style + structure
+• Sequelize
+
 ## Data Models
 
 > **All models are defined in src/model.js**
