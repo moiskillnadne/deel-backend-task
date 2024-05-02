@@ -140,14 +140,9 @@ app.get("/admin/best-clients", async (req, res) => {
  * @returns Profile
  */
 app.post("/profile/login", async (req, res) => {
-
-  console.log(req.body)
   const { profileId } = req.body
 
   const profile = await ProfileService.login(profileId)
-
-  console.log(profileId)
-  console.log(profile)
 
   if(!profile) {
     return res.status(404).json({ isSuccess: false, message: `Profile with id = ${profileId} not found` })
