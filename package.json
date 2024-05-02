@@ -11,7 +11,10 @@
     "sqlite3": "^5.0.0"
   },
   "scripts": {
-    "start": "nodemon ./src/server.js",
+    "setup": "npm install && npm run seed && cd deel-frontend && npm install",
+    "start:back": "nodemon ./src/server.js",
+    "start:front": "cd deel-frontend && npm run dev",
+    "start": "concurrently \"npm run start:back\" \"npm run start:front\"",
     "seed": "node ./scripts/seedDb.js",
     "lint": "eslint . --fix",
     "format": "prettier --write ."
