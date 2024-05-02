@@ -9,10 +9,30 @@ This backend exercise involves building a Node.js/Express.js app that will serve
 
 The following things was considered:
 
-• Use of transactions
-• Concurrency
-• Code style + structure
-• Sequelize
+1. Use of transactions
+> Some methods include transactions. I used transactions only for money operations. The simple endpoints were implemented without transactions because it can affect performance.
+
+2. Sequelize
+> My goal here was to avoid JS mappers and stuff like that. I have tried to implement all described endpoints only with Sequelize and SQL Queries.
+
+3. Concurrency
+> Unfortunately, the SQLite database doesn`t support isolation levels. But anyway I left a commented part of the code where I demonstrate what Isolation Level I would use
+
+4. Code style
+> To be honest I haven`t changed something here a lot. I have added the vital minimum of formatting tools (Eslint, Prettier) and have created the basic configuration files. No rocket science here. If I had more time I would like to adjust the eslint rules more accurately
+
+5. Structure
+> In my humble opinion, the structure should be considered based on the app size.  We have a small test application and I think that the structure should be simple. Without overheads at the moment.
+
+> My thoughts. I have decided to leave the endpoints in the app.js file without dividing them by domain zones. The only thing that I did was put the SQL Queries into separate services. Probably it should be the crud services. But here I thought that we had no separate business logic and left it as is.
+
+> It is not the best structure in the world but it`s suitable here. In case of growth of the app, we should consider the structure changes. For example, dividing the code on Controllers, Services and Cruds. And also we should it divide by domain zones. These changes already allow us to scale the app and it is only beginning!
+
+6. Unit tests
+> In the absence of TS, we should apply the unit testing for vital parts of business logic. Otherwise, we have a chance to break something or spend a lot of time on manual testing.
+
+7. Frontend App
+> I have preferred to create the front end rather than creating unit tests. It was a difficult choice for me. I have chosen to build the front-end app because I think this skill can tell more about me as an engineer. And of course, for you, it's more fun than unit tests. You can click the buttons! It's fun. Isn`t it?
 
 ## Data Models
 
